@@ -1,0 +1,13 @@
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local logs
+**/logs/
+*.log
+
+# Shared Data directories (contain massive model weights & datasets)
+Data/
+**/huggingface_cache/
