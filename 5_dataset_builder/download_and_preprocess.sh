@@ -40,7 +40,9 @@ if [ -d "$PROJECT_ROOT/Data/NQ_default" ]; then
     echo "✅ Step 1 Complete."
 else
     docker run --rm \
-      -v ~/.cache:/root/.cache \
+      -u $(id -u):$(id -g) \
+      -e HF_HOME=/hf_cache \
+      -v ~/.cache/huggingface:/hf_cache \
       -v "$PROJECT_ROOT":/workspace \
       cxl_rag_preprocess python3 /workspace/5_dataset_builder/download_huggingface.py \
                             --hf-dir="google-research-datasets/natural_questions" \
@@ -48,37 +50,39 @@ else
     echo "✅ Step 1 Complete."
 fi
 
-# 5. Step 2: Download 1024-dimensional BGE-large-en-v1.5 Embedding Model
+# 5. Step 2: Download 768-dimensional BGE-base-en-v1.5 Embedding Model
 echo "-------------------------------------------------------------------------"
-echo "📥 Step 2: Downloading BGE-large-en-v1.5 Embedding Model..."
+echo "📥 Step 2: Downloading BGE-base-en-v1.5 Embedding Model..."
 echo "-------------------------------------------------------------------------"
-if [ -d "$PROJECT_ROOT/Data/bge-large-en-v1.5" ]; then
-    echo "⚠️  [Skip] Data/bge-large-en-v1.5 already exists. Skipping download."
+if [ -d "$PROJECT_ROOT/Data/bge-base-en-v1.5" ]; then
+    echo "⚠️  [Skip] Data/bge-base-en-v1.5 already exists. Skipping download."
     echo "✅ Step 2 Complete."
 else
     docker run --rm \
-      -v ~/.cache:/root/.cache \
+      -u $(id -u):$(id -g) \
+      -e HF_HOME=/hf_cache \
+      -v ~/.cache/huggingface:/hf_cache \
       -v "$PROJECT_ROOT":/workspace \
       cxl_rag_preprocess python3 /workspace/5_dataset_builder/download_huggingface.py \
-                            --embedding-model "BAAI/bge-large-en-v1.5" \
-                            --save-dir="/workspace/Data/bge-large-en-v1.5"
+                            --embedding-model "BAAI/bge-base-en-v1.5" \
+                            --save-dir="/workspace/Data/bge-base-en-v1.5"
     echo "✅ Step 2 Complete."
 fi
 
-# 6. Step 3: Preprocess NQ dataset and generate 1024-dim BGE Embeddings
+# 6. Step 3: Preprocess NQ dataset and generate 768-dim BGE Embeddings
 echo "-------------------------------------------------------------------------"
-echo "🧠 Step 3: Preprocessing NQ Dataset & Generating 1024-dim Embeddings..."
+echo "🧠 Step 3: Preprocessing NQ Dataset & Generating 768-dim Embeddings..."
 echo "-------------------------------------------------------------------------"
 if [ -d "$PROJECT_ROOT/Data/NQ_default_question_7830" ] && [ -d "$PROJECT_ROOT/Data/NQ_default_embedded_question_7830" ]; then
     echo "⚠️  [Skip] Preprocessed datasets (7830 questions & embeddings) already exist."
 else
     docker run --rm \
-      -v ~/.cache:/root/.cache \
+      -u $(id -u):$(id -g) \
       -v "$PROJECT_ROOT":/workspace \
       cxl_rag_preprocess python3 /workspace/5_dataset_builder/question_to_embedding.py \
                             --dataset-dir="/workspace/Data/NQ_default" \
                             --split="validation" \
-                            --embedding-model-dir="/workspace/Data/bge-large-en-v1.5" \
+                            --embedding-model-dir="/workspace/Data/bge-base-en-v1.5" \
                             --store-question \
                             --store-embedding
 fi
@@ -95,7 +99,9 @@ else
     rm -rf "$PROJECT_ROOT/Data/Llama3-ChatQA-1.5-8B"
     
     docker run --rm \
-      -v ~/.cache:/root/.cache \
+      -u $(id -u):$(id -g) \
+      -e HF_HOME=/hf_cache \
+      -v ~/.cache/huggingface:/hf_cache \
       -v "$PROJECT_ROOT":/workspace \
       cxl_rag_preprocess python3 /workspace/5_dataset_builder/download_huggingface.py \
                             --llm "nvidia/Llama3-ChatQA-1.5-8B" \
@@ -113,7 +119,7 @@ echo "========================================================================="
 echo "🎉 Setup Complete! All Data and Real Model Weights are ready for Experiments."
 echo "Created directories under Data/:"
 echo "  📂 Data/NQ_default (Natural Questions Dataset)"
-echo "  📂 Data/bge-large-en-v1.5 (1024-dim Embedding Model)"
+echo "  📂 Data/bge-base-en-v1.5 (768-dim Embedding Model)"
 echo "  📂 Data/NQ_default_question_7830 (Preprocessed Questions)"
 echo "  📂 Data/NQ_default_embedded_question_7830 (BGE Embeddings)"
 echo "  📂 Data/Llama3-ChatQA-1.5-8B (Raw LLM Weights & Tokenizer - Pure Real Files)"

@@ -12,7 +12,7 @@ NET="cxl_rag_network"
 IMAGE_NAME="cxl_rag_embedding"
 CONTAINER_NAME="embedding_container_async"
 LOG_DIR="$(pwd)/logs"
-MODEL_DIR="$(realpath ../Data/bge-large-en-v1.5)"
+MODEL_DIR="$(realpath ../Data/bge-base-en-v1.5)"
 
 # 네트워크 생성
 docker network inspect $NET >/dev/null 2>&1 || docker network create $NET
@@ -26,7 +26,7 @@ docker rm -f $CONTAINER_NAME >/dev/null 2>&1
 echo "🚀 Building Embedding Server Image..."
 docker build -t $IMAGE_NAME .
 
-echo "🎬 Starting Embedding Container (BGE 1024-dim)..."
+echo "🎬 Starting Embedding Container (BGE 768-dim)..."
 echo "   - Mounting Model: $MODEL_DIR"
 echo "   - Connecting Qdrant at: $VECTORDB_IP:6333"
 

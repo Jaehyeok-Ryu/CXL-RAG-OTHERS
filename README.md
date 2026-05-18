@@ -10,11 +10,11 @@
 
 *   `Data/`: [호스트 공유 볼륨] 질문 데이터셋 및 임베딩 모델 가중치 보관 (Git 제외)
 *   `scripts/`: 공용 유틸리티 및 도커 네트워크 구성 도구
-*   `1_embedding_server/`: 1024차원 BGE 임베딩 비동기 API 서버 (Port: 5003)
+*   `1_embedding_server/`: 768차원 BGE 임베딩 비동기 API 서버 (Port: 5003)
 *   `2_llm_server/`: Llama-3-ChatQA 생성 백배치 API 서버 (Port: 5000)
 *   `3_request_generator/`: 실시간 TTFT/RPS 요청 생성 서버 (Port: 6000)
 *   `4_load_generator/`: Qdrant 전용 가변 RPS 스트레스 생성기 (NUMA 및 Zipf 지원)
-*   `5_dataset_builder/`: NQ 데이터셋 다운로드 및 1024차원 전처리 자동화 도구
+*   `5_dataset_builder/`: NQ 데이터셋 다운로드 및 768차원 전처리 자동화 도구
 
 ---
 
@@ -30,7 +30,7 @@ cd scripts
 ```
 
 ### 1️⃣ 데이터셋 및 임베딩 모델 준비 (최초 1회 필수)
-RAG 루프와 임베딩 서버 기동에 필수적인 `bge-large-en-v1.5` 모델과 `Google NQ` 1024차원 전처리 데이터셋을 생성합니다.
+RAG 루프와 임베딩 서버 기동에 필수적인 `bge-base-en-v1.5` 모델과 `Google NQ` 768차원 전처리 데이터셋을 생성합니다.
 
 ```bash
 cd ../5_dataset_builder
@@ -43,7 +43,7 @@ cd ../5_dataset_builder
 > 아래 명령어 두 줄로 기존 캐시 폴더를 새 리포지토리의 `Data/` 디렉터리에 링크해주면, 스크립트 실행 시 즉시 감지하여 **0.1초 만에 전 단계를 스마트 패스(Skip)**하고 완료됩니다.
 > ```bash
 > ln -s /home/cxl_qemu/CXL_2nd_year_mid/Data/NQ_default ../Data/
-> ln -s /home/cxl_qemu/CXL_2nd_year_mid/Data/bge-large-en-v1.5 ../Data/
+> ln -s /home/cxl_qemu/CXL_2nd_year_mid/Data/bge-base-en-v1.5 ../Data/
 > ```
 
 ### 2️⃣ 임베딩 서버 기동 (GPU 사용)
@@ -67,7 +67,7 @@ cd ../3_request_generator
 # 형식: ./run.sh [TARGET_QPS] [QUERY_COUNT]
 ./run.sh 2.0 100
 ```
-이 생성기가 돌아가며 `1024차원 NQ 질문` ➔ `임베딩 서버` ➔ `원격 Qdrant` ➔ `컨텍스트 병합` ➔ `LLM 서버` ➔ `생성 및 TTFT 측정` RAG 사이클을 실시간으로 추적합니다.
+이 생성기가 돌아가며 `768차원 NQ 질문` ➔ `임베딩 서버` ➔ `원격 Qdrant` ➔ `컨텍스트 병합` ➔ `LLM 서버` ➔ `생성 및 TTFT 측정` RAG 사이클을 실시간으로 추적합니다.
 
 ### 5️⃣ Qdrant 단독 성능 벤치마크 (Load Generator) 구동
 NUMA 가중 메모리 인터리빙(CXL Weighted Interleaving)에 따른 Qdrant DB의 순수 검색 레이턴시 및 RPS 한계 성능을 측정하려면 단독 부하 생성기를 사용합니다.
