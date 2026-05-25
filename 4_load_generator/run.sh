@@ -25,7 +25,7 @@ elif [ "$SCRIPT_TYPE" == "normal" ]; then
 elif [ "$SCRIPT_TYPE" == "no_async_zipf" ]; then
   PY_SCRIPT="load_generator_no_async_zipf.py"
 else
-  echo "❌ Error: Invalid SCRIPT_TYPE '$SCRIPT_TYPE'. Use 'normal', 'zipf', or 'no_async_zipf'."
+  echo " Error: Invalid SCRIPT_TYPE '$SCRIPT_TYPE'. Use 'normal', 'zipf', or 'no_async_zipf'."
   exit 1
 fi
 
@@ -52,10 +52,10 @@ docker network inspect $NET >/dev/null 2>&1 || docker network create $NET
 # 기존 컨테이너 종료
 docker rm -f $CONTAINER_NAME >/dev/null 2>&1
 
-echo "🚀 Building Load Generator Image..."
+echo " Building Load Generator Image..."
 docker build -t $IMAGE_NAME .
 
-echo "🎬 Starting Load Generator Container..."
+echo " Starting Load Generator Container..."
 echo "   - Mounting Embedded Dataset: $DATASET_DIR"
 echo "   - Running Script: $PY_SCRIPT"
 echo "   - Target VectorDB 1: $VECTORDB_IP_1:6333"

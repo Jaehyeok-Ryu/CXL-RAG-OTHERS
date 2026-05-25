@@ -33,7 +33,7 @@ QUERY_COUNT=${4:-"1000"}
 # ------------------------------------------------------------------------------
 # 1. TOTAL_RPS 검증: 숫자 또는 소수점 형식만 허용 (Command Injection 방지)
 if [[ ! "$TOTAL_RPS" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
-  echo "❌ [Error] Invalid TOTAL_RPS: '$TOTAL_RPS'. 숫자(정수/소수)만 입력 가능합니다." >&2
+  echo " [Error] Invalid TOTAL_RPS: '$TOTAL_RPS'. 숫자(정수/소수)만 입력 가능합니다." >&2
   exit 1
 fi
 
@@ -41,17 +41,17 @@ fi
 IP_REGEX="^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$"
 HOST_REGEX="^[a-zA-Z0-9.-]+$"
 if [[ ! "$VECTORDB_IP_1" =~ $IP_REGEX ]] && [[ ! "$VECTORDB_IP_1" =~ $HOST_REGEX ]]; then
-  echo "❌ [Error] Invalid VECTORDB_IP_1: '$VECTORDB_IP_1'. 올바른 IP 또는 호스트명을 입력하십시오." >&2
+  echo " [Error] Invalid VECTORDB_IP_1: '$VECTORDB_IP_1'. 올바른 IP 또는 호스트명을 입력하십시오." >&2
   exit 1
 fi
 if [[ ! "$VECTORDB_IP_2" =~ $IP_REGEX ]] && [[ ! "$VECTORDB_IP_2" =~ $HOST_REGEX ]]; then
-  echo "❌ [Error] Invalid VECTORDB_IP_2: '$VECTORDB_IP_2'. 올바른 IP 또는 호스트명을 입력하십시오." >&2
+  echo " [Error] Invalid VECTORDB_IP_2: '$VECTORDB_IP_2'. 올바른 IP 또는 호스트명을 입력하십시오." >&2
   exit 1
 fi
 
 # 3. QUERY_COUNT 검증: 자연수만 허용
 if [[ ! "$QUERY_COUNT" =~ ^[0-9]+$ ]] || [ "$QUERY_COUNT" -eq 0 ]; then
-  echo "❌ [Error] Invalid QUERY_COUNT: '$QUERY_COUNT'. 1 이상의 정수만 허용됩니다." >&2
+  echo " [Error] Invalid QUERY_COUNT: '$QUERY_COUNT'. 1 이상의 정수만 허용됩니다." >&2
   exit 1
 fi
 # ------------------------------------------------------------------------------
@@ -75,7 +75,7 @@ REQGEN_DIR="$(realpath ../../3_request_generator)"
 LOADGEN_DIR="$(realpath ../../4_load_generator)"
 
 echo "========================================================================="
-echo "⚙️  Starting RAG & Load Generator Integrated Orchestration"
+echo "  Starting RAG & Load Generator Integrated Orchestration"
 echo "========================================================================="
 echo "   - Total Target RPS (n)  : $TOTAL_RPS"
 echo "   - Request Generator RPS : $REQGEN_RPS (Query Count: $QUERY_COUNT)"
@@ -155,7 +155,7 @@ while true; do
     break
   fi
   ELAPSED=$(( $(date +%s) - START_TIME ))
-  echo "⏱️  Running benchmark... [Elapsed: ${ELAPSED}s]"
+  echo "  Running benchmark... [Elapsed: ${ELAPSED}s]"
   sleep 10
 done
 
@@ -174,13 +174,13 @@ mkdir -p "$RESULT_SAVE_DIR"
 if [ -d "$REQGEN_DIR/results" ] && [ "$(ls -A "$REQGEN_DIR/results")" ]; then
   cp "$REQGEN_DIR/results"/* "$RESULT_SAVE_DIR/"
   echo "========================================================================="
-  echo "🎉 Benchmark results successfully archived!"
+  echo " Benchmark results successfully archived!"
   echo "   - Output Directory: $RESULT_SAVE_DIR"
   echo "========================================================================="
   cat "$RESULT_SAVE_DIR/ttft_summary.txt" 2>/dev/null || true
   echo "========================================================================="
 else
-  echo "❌ [Error] No result files found under $REQGEN_DIR/results."
+  echo " [Error] No result files found under $REQGEN_DIR/results."
 fi
 
 # 컨테이너 자원 정리

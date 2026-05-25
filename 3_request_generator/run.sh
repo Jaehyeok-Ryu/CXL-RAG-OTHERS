@@ -25,10 +25,10 @@ mkdir -p "$SCRIPT_DIR/results"
 chmod 777 "$SCRIPT_DIR/results"
 rm -f "$SCRIPT_DIR/results"/*
 
-echo "🚀 Building Request Generator Image..."
+echo " Building Request Generator Image..."
 docker build -t $IMAGE_NAME .
 
-echo "🎬 Starting Request Generator Container..."
+echo " Starting Request Generator Container..."
 echo "   - Mounting Question Dataset: $QUESTION_DIR"
 echo "   - Mounting Results Directory: $SCRIPT_DIR/results"
 echo "   - Target QPS: $TARGET_QPS, Query Count: $QUERY_COUNT"

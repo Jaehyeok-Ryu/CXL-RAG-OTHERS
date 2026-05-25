@@ -20,10 +20,10 @@ mkdir -p "$LOG_DIR"
 # 기존 컨테이너 종료
 docker rm -f $CONTAINER_NAME >/dev/null 2>&1
 
-echo "🚀 Building LLM Server Image..."
+echo " Building LLM Server Image..."
 docker build -t $IMAGE_NAME .
 
-echo "🎬 Starting LLM Container (Llama3-ChatQA-1.5-8B)..."
+echo " Starting LLM Container (Llama3-ChatQA-1.5-8B)..."
 echo "   - Mounting Model: $MODEL_DIR"
 
 docker run -d \

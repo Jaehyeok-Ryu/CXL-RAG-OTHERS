@@ -29,10 +29,10 @@ mkdir -p "$LOG_DIR"
 # 기존 컨테이너 종료
 docker rm -f $CONTAINER_NAME >/dev/null 2>&1
 
-echo "🚀 Building Embedding Server Image..."
+echo " Building Embedding Server Image..."
 docker build -t $IMAGE_NAME .
 
-echo "🎬 Starting Embedding Container (BGE 768-dim)..."
+echo " Starting Embedding Container (BGE 768-dim)..."
 echo "   - Mounting Model: $MODEL_DIR"
 echo "   - Connecting Qdrant 1 at: $VECTORDB_IP_1:6333"
 echo "   - Connecting Qdrant 2 at: $VECTORDB_IP_2:6343"
