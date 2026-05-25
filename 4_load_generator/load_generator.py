@@ -37,7 +37,7 @@ async def generate_request(client, collection_name, embedding, request_times_que
     except Exception as e:
         print(f"Query failed: {e}", flush=True)
 
-async def stress_test(client, collection_name, dataset, rate, req_count, request_times_queue):
+async def stress_test(client1, client2, collection_name, dataset, rate, req_count, request_times_queue):
     dataset_length = len(dataset)
     tasks = []  # Keep track of all tasks
     print(f"Starting stress test with {req_count} requests at rate {rate} RPS", flush=True)
@@ -46,25 +46,28 @@ async def stress_test(client, collection_name, dataset, rate, req_count, request
         await asyncio.sleep(delay)
         print(f"Sending request {i} with delay {delay:.2f}", flush=True)
         embedding = dataset[i % dataset_length] # dataset[i % dataset_length]
+        # 50% load balancing between Socket 0 and Socket 1 VectorDBs
+        client = client1 if random.random() < 0.5 else client2
         tasks.append(asyncio.create_task(generate_request(client, collection_name, embedding, request_times_queue)))
     await asyncio.gather(*tasks)
     print(f"Completed stress test with {req_count} requests", flush=True)
 
-async def main_process(collection_name: str, dataset, rate: float, req_count: int, request_times_queue, host: str, port: int):
+async def main_process(collection_name: str, dataset, rate: float, req_count: int, request_times_queue, qdrant_host_1, qdrant_port_1, qdrant_host_2, qdrant_port_2):
     print(f"Starting main process with collection: {collection_name}", flush=True)
-    client = AsyncQdrantClient(url=host, port=port)
+    client1 = AsyncQdrantClient(url=qdrant_host_1, port=qdrant_port_1)
+    client2 = AsyncQdrantClient(url=qdrant_host_2, port=qdrant_port_2)
     try:
-        await client.get_collection(collection_name=collection_name)
-        print(f"Collection '{collection_name}' checked successfully.", flush=True)
+        await client1.get_collection(collection_name=collection_name)
+        print(f"Collection '{collection_name}' checked on client1 successfully.", flush=True)
     except Exception as e:
-        print(f"Collection check failed: {e}", flush=True)
+        print(f"Collection check failed on client1: {e}", flush=True)
         return
 
     # Start stress test
-    await stress_test(client, collection_name, dataset, rate, req_count, request_times_queue)
+    await stress_test(client1, client2, collection_name, dataset, rate, req_count, request_times_queue)
 
-def start_event_loop(collection_name, dataset, rate, req_count, request_times_queue, host, port):
-    asyncio.run(main_process(collection_name, dataset, rate, req_count, request_times_queue, host, port))
+def start_event_loop(collection_name, dataset, rate, req_count, request_times_queue, qdrant_host_1, qdrant_port_1, qdrant_host_2, qdrant_port_2):
+    asyncio.run(main_process(collection_name, dataset, rate, req_count, request_times_queue, qdrant_host_1, qdrant_port_1, qdrant_host_2, qdrant_port_2))
 
 def argument_parser():
     parser = argparse.ArgumentParser()
@@ -72,13 +75,14 @@ def argument_parser():
     parser.add_argument("--collection-name", type=str, required=True, help="Target collection name")
     parser.add_argument("--target-rps", type=float, required=True, help="Target requests per second (lambda)")
     parser.add_argument("--requests-count", type=int, required=True, help="Number of requests to send")
-    parser.add_argument("--host", type=str, default="172.26.0.1", help="Qdrant server host")
-    parser.add_argument("--port", type=int, default=6333, help="Qdrant server port")
+    parser.add_argument("--qdrant-host-1", type=str, default="172.26.0.1", help="Host of Socket 0 VectorDB")
+    parser.add_argument("--qdrant-port-1", type=int, default=6333, help="Port of Socket 0 VectorDB")
+    parser.add_argument("--qdrant-host-2", type=str, default="172.26.0.1", help="Host of Socket 1 VectorDB")
+    parser.add_argument("--qdrant-port-2", type=int, default=6343, help="Port of Socket 1 VectorDB")
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = argument_parser()
-
 
     # cpu_count = os.cpu_count()  # Use the number of CPU cores for process count
     cpu_count = 16  # Use the number of CPU cores for process count
@@ -98,8 +102,10 @@ if __name__ == "__main__":
             args.target_rps / cpu_count,  # Divide RPS across processes
             args.requests_count // cpu_count,  # Divide request count across processes
             request_times_queue,  # Shared request times queue
-            args.host,
-            args.port
+            args.qdrant_host_1,
+            args.qdrant_port_1,
+            args.qdrant_host_2,
+            args.qdrant_port_2
         ))
         print(f"Starting process {i}", flush=True)
         p.start()

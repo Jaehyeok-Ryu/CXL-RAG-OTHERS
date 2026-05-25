@@ -20,11 +20,17 @@ docker network inspect $NET >/dev/null 2>&1 || docker network create $NET
 # 기존 컨테이너 종료
 docker rm -f $CONTAINER_NAME >/dev/null 2>&1
 
+# 호스트 측 결과 저장용 디렉토리 생성 및 권한 설정
+mkdir -p "$SCRIPT_DIR/results"
+chmod 777 "$SCRIPT_DIR/results"
+rm -f "$SCRIPT_DIR/results"/*
+
 echo "🚀 Building Request Generator Image..."
 docker build -t $IMAGE_NAME .
 
 echo "🎬 Starting Request Generator Container..."
 echo "   - Mounting Question Dataset: $QUESTION_DIR"
+echo "   - Mounting Results Directory: $SCRIPT_DIR/results"
 echo "   - Target QPS: $TARGET_QPS, Query Count: $QUERY_COUNT"
 
 docker run -d \
@@ -32,8 +38,10 @@ docker run -d \
   --network $NET \
   -p 6000:6000 \
   -v "$QUESTION_DIR":/app/questions \
+  -v "$SCRIPT_DIR/results":/app/results \
   $IMAGE_NAME python3 /app/app.py \
     --question-dir=/app/questions \
     --target-qps="$TARGET_QPS" \
     --query-count="$QUERY_COUNT" \
-    --gpu-server-ip=embedding_container_async
+    --gpu-server-ip=embedding_container_async \
+    --results-dir=/app/results

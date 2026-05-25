@@ -8,5 +8,3 @@ RUN pip install --no-cache-dir flask qdrant-client qdrant-client[fastembed] sent
 WORKDIR /app
 
 COPY load_generator.py /app/load_generator.py
-COPY load_generator_zipf.py /app/load_generator_zipf.py
-COPY load_generator_no_async_zipf.py /app/load_generator_no_async_zipf.py

@@ -9,16 +9,44 @@ import os
 import logging
 import sys
 import argparse
+import random
+
+# Load environment variables from .env file
+def _load_env():
+    paths = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "../.env"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../.env"),
+    ]
+    for p in paths:
+        if os.path.exists(p):
+            with open(p, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        key, val = line.split("=", 1)
+                        os.environ[key.strip()] = val.strip().strip('"').strip("'")
+            break
+
+_load_env()
 
 argparser = argparse.ArgumentParser()
-argparser.add_argument("--cpu-server-ip", type=str, default="163.152.48.208", help="CPUserver IP address")
-argparser.add_argument("--gpu-server-ip", type=str, default="163.152.48.205", help="GPU server IP address")
+argparser.add_argument("--cpu-server-ip", type=str, default=os.getenv("EMBEDDING_CPU_SERVER_IP", os.getenv("CPU_SERVER_IP", "127.0.0.1")), help="CPUserver IP address")
+argparser.add_argument("--gpu-server-ip", type=str, default=os.getenv("EMBEDDING_GPU_SERVER_IP", os.getenv("GPU_SERVER_IP", "127.0.0.1")), help="GPU server IP address")
 argparser.add_argument("--vectordb-ip", type=str, default=None, help="VectorDB (Qdrant) IP address. Defaults to cpu-server-ip.")
+argparser.add_argument("--vectordb-ip-1", type=str, default=None, help="Socket 0 Qdrant IP. Defaults to cpu-server-ip.")
+argparser.add_argument("--vectordb-port-1", type=int, default=6333, help="Socket 0 Qdrant port.")
+argparser.add_argument("--vectordb-ip-2", type=str, default=None, help="Socket 1 Qdrant IP. Defaults to cpu-server-ip.")
+argparser.add_argument("--vectordb-port-2", type=int, default=6343, help="Socket 1 Qdrant port.")
 args = argparser.parse_args()
 
 cpu_server_ip = args.cpu_server_ip
 gpu_server_ip = args.gpu_server_ip
 vectordb_ip = args.vectordb_ip if args.vectordb_ip else cpu_server_ip
+
+# 듀얼 IP 설정 분리
+vectordb_ip_1 = args.vectordb_ip_1 if args.vectordb_ip_1 else vectordb_ip
+vectordb_ip_2 = args.vectordb_ip_2 if args.vectordb_ip_2 else vectordb_ip
 
 # 로깅 설정
 logging.basicConfig(
@@ -33,11 +61,12 @@ request_queue = None
 
 
 # Qdrant Initialization
-logger.info("Initializing Qdrant...")  # qdrant
-client = QdrantClient(host=vectordb_ip, port=6333, timeout=30.0)
+logger.info("Initializing Qdrant Clients...")  # qdrant
+client1 = QdrantClient(host=vectordb_ip_1, port=args.vectordb_port_1, timeout=30.0)
+client2 = QdrantClient(host=vectordb_ip_2, port=args.vectordb_port_2, timeout=30.0)
 collection_name = "wiki_passages"  # qdrant
 
-logger.info("Qdrant initialized.")  # qdrant
+logger.info("Qdrant Clients initialized.")  # qdrant
 
 # SentenceTransformer 모델 로드
 model = SentenceTransformer("/app/model", device="cuda")  # Load from mounted directory
@@ -129,6 +158,8 @@ async def process_batch(batch_data):
             ) for i in range(len(embedded_queries))
         ]
 
+        # 50:50 분산 질의 적용
+        client = client1 if random.random() < 0.5 else client2
         results = client.query_batch_points(
             collection_name=collection_name,
             requests=search_queries

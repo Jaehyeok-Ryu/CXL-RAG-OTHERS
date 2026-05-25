@@ -9,11 +9,30 @@ from threading import Thread
 import os
 import argparse
 
+# Load environment variables from .env file
+def _load_env():
+    paths = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "../.env"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../.env"),
+    ]
+    for p in paths:
+        if os.path.exists(p):
+            with open(p, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        key, val = line.split("=", 1)
+                        os.environ[key.strip()] = val.strip().strip('"').strip("'")
+            break
+
+_load_env()
+
 # Flask 앱 생성
 app = Flask(__name__)
 
 argparser = argparse.ArgumentParser()
-argparser.add_argument("--cpu-server-ip", type=str, default="163.152.48.208", help="CPUserver IP address")
+argparser.add_argument("--cpu-server-ip", type=str, default=os.getenv("LLM_CPU_SERVER_IP", os.getenv("CPU_SERVER_IP", "127.0.0.1")), help="CPUserver IP address")
 args = argparser.parse_args()
 
 cpu_server_ip = args.cpu_server_ip

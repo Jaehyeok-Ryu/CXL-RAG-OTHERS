@@ -47,11 +47,11 @@ cd ../5_dataset_builder
 > ```
 
 ### 2️⃣ 임베딩 서버 기동 (GPU 사용)
-기동 시 원격 VectorDB (Qdrant)가 설치된 서버(Server A)의 물리 IP 주소를 인자값으로 전달합니다.
+기동 시 원격 VectorDB (Qdrant)가 설치된 서버의 각 소켓별 물리 IP 주소를 순서대로 전달하여, 듀얼 인스턴스(Port 6333 및 6343) 간 50:50 동적 부하 분산 쿼리가 흐르도록 기동합니다.
 ```bash
 cd ../1_embedding_server
-# 형식: ./run.sh [VECTORDB_IP]
-./run.sh 163.152.48.208
+# 형식: ./run.sh [SOCKET_0_VECTORDB_IP] [SOCKET_1_VECTORDB_IP]
+./run.sh 127.0.0.1 127.0.0.1
 ```
 
 ### 3️⃣ LLM 추론 서버 기동 (GPU 사용)
@@ -70,12 +70,12 @@ cd ../3_request_generator
 이 생성기가 돌아가며 `768차원 NQ 질문` ➔ `임베딩 서버` ➔ `원격 Qdrant` ➔ `컨텍스트 병합` ➔ `LLM 서버` ➔ `생성 및 TTFT 측정` RAG 사이클을 실시간으로 추적합니다.
 
 ### 5️⃣ Qdrant 단독 성능 벤치마크 (Load Generator) 구동
-NUMA 가중 메모리 인터리빙(CXL Weighted Interleaving)에 따른 Qdrant DB의 순수 검색 레이턴시 및 RPS 한계 성능을 측정하려면 단독 부하 생성기를 사용합니다.
+NUMA 가중 메모리 인터리빙(CXL Weighted Interleaving)에 따른 Qdrant DB의 순수 검색 레이턴시 및 RPS 한계 성능을 측정하려면 단독 부하 생성기를 사용합니다. 두 Qdrant 인스턴스로 분산(50:50)하여 스트레스를 가합니다.
 ```bash
 cd ../4_load_generator
-# 형식: ./run.sh [VECTORDB_IP] [TARGET_RPS] [REQUESTS_COUNT] [SCRIPT_TYPE: zipf|normal|no_async_zipf]
-./run.sh 163.152.48.208 100.0 2000 zipf
+# 형식: ./run.sh [SOCKET_0_VECTORDB_IP] [SOCKET_1_VECTORDB_IP] [TARGET_RPS] [REQUESTS_COUNT] [SCRIPT_TYPE: normal|zipf|no_async_zipf]
+./run.sh 127.0.0.1 127.0.0.1 100.0 2000 normal
 ```
 > [!TIP]
 > NUMA/CPU 물리 코어 고정 옵션을 주어 실행하고 싶은 경우, 환경변수 `LOADGEN_CPUS` 및 `LOADGEN_MEMS`를 주입하여 실행합니다:
-> `LOADGEN_CPUS="0-11" LOADGEN_MEMS="0" ./run.sh 163.152.48.208 150.0 5000 zipf`
+> `LOADGEN_CPUS="0-11" LOADGEN_MEMS="0" ./run.sh 127.0.0.1 127.0.0.1 150.0 5000 normal`

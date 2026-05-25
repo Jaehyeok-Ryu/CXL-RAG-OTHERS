@@ -6,7 +6,13 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
-VECTORDB_IP=${1:-"163.152.48.208"} # 기본값으로 기존 CPU/Qdrant IP 지정
+# Load environment variables from .env file if it exists
+if [ -f "$SCRIPT_DIR/../.env" ]; then
+  export $(grep -v '^#' "$SCRIPT_DIR/../.env" | xargs)
+fi
+
+VECTORDB_IP_1=${1:-${VECTORDB_IP_1:-"127.0.0.1"}} # Socket 0 Qdrant
+VECTORDB_IP_2=${2:-${VECTORDB_IP_2:-"127.0.0.1"}} # Socket 1 Qdrant
 
 NET="cxl_rag_network"
 IMAGE_NAME="cxl_rag_embedding"
@@ -28,7 +34,8 @@ docker build -t $IMAGE_NAME .
 
 echo "🎬 Starting Embedding Container (BGE 768-dim)..."
 echo "   - Mounting Model: $MODEL_DIR"
-echo "   - Connecting Qdrant at: $VECTORDB_IP:6333"
+echo "   - Connecting Qdrant 1 at: $VECTORDB_IP_1:6333"
+echo "   - Connecting Qdrant 2 at: $VECTORDB_IP_2:6343"
 
 docker run -d \
   --name $CONTAINER_NAME \
@@ -40,4 +47,7 @@ docker run -d \
   $IMAGE_NAME python3 /app/app.py \
     --cpu-server-ip=request_generator_container \
     --gpu-server-ip=llm_inference_container \
-    --vectordb-ip="$VECTORDB_IP"
+    --vectordb-ip-1="$VECTORDB_IP_1" \
+    --vectordb-port-1=6333 \
+    --vectordb-ip-2="$VECTORDB_IP_2" \
+    --vectordb-port-2=6343
